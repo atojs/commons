@@ -33,31 +33,14 @@ class Lock(object):
   def acquire(path, onwait=None):
     """Attempts to lock the given path which need not exist ahead of time.
 
-    By default acquire blocks as long as needed for the lock to be released if already held.
-
-    If an onwait function is supplied, it will be passed the lock owner's pid when the lock cannot
-    be acquired immediately.  In this case the onwait function should return True if it wishes to
-    block on acquisition of the Lock.  Otherwise None will be returned as a signal to acquire's
-    caller that the lock failed.
+    Acquire blocks as long as needed for the lock to be released if already held.
     """
-    lock = None;
     touch(path)
-    if onwait:
-      with open(path, 'r') as fd:
-        pid = int(fd.read().strip())
-        if onwait(pid): 
-          lock_fd = lock_file(path, blocking=True)
-          lock_fd.truncate(0)
-          lock_fd.write('%d\n' % os.getpid())
-          lock_fd.flush()
-          lock = Lock(lock_fd)
-    else:
-      lock_fd = lock_file(path, blocking=True)
-      lock_fd.truncate(0)
-      lock_fd.write('%d\n' % os.getpid())
-      lock_fd.flush()
-      lock = Lock(lock_fd)
-    return lock
+    lock_fd = lock_file(path, blocking=True)
+    lock_fd.truncate(0)
+    lock_fd.write('%d\n' % os.getpid())
+    lock_fd.flush()
+    return Lock(lock_fd)
 
   def __init__(self, lock_fd):
     self._lock_fd = lock_fd
