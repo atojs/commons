@@ -41,22 +41,24 @@ class Lock(object):
     caller that the lock failed.
     """
 
+    lock = None;
     touch(path)
-    lock_fd = lock_file(path, blocking=False)
-    if not lock_fd:
-      blocking = True
+    if onwait:
       with open(path, 'r') as fd:
-        pid = int(fd.read().strip())
-        if onwait:
-          blocking = onwait(pid)
-      if not blocking:
-        return None
-      lock_fd = lock_file(path, blocking=blocking)
-
-    lock_fd.truncate(0)
-    lock_fd.write('%d\n' % os.getpid())
-    lock_fd.flush()
-    return Lock(lock_fd)
+      pid = int(fd.read().strip())
+      if onwait(pid): 
+        lock_fd = lock_file(path, blocking=True)
+        lock_fd.truncate(0)
+        lock_fd.write('%d\n' % os.getpid())
+        lock_fd.flush()
+        lock = Lock(lock_fd)
+    else:
+      lock_fd = lock_file(path, blocking=True)
+      lock_fd.truncate(0)
+      lock_fd.write('%d\n' % os.getpid())
+      lock_fd.flush()
+      lock = Lock(lock_fd)
+    return lock;
 
   def __init__(self, lock_fd):
     self._lock_fd = lock_fd
